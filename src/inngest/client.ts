@@ -15,7 +15,7 @@ type Events = {
 };
 
 export const inngest = new Inngest({
-  id: "github-retry-ci",
+  id: "github-retry-ci-deployed",
   eventKey: config.inngestEventKey,
   isDev: config.inngestDev,
   schemas: new EventSchemas().fromRecord<Events>(),
