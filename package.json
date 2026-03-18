@@ -1,0 +1,22 @@
+{
+  "name": "github-retry",
+  "version": "1.0.0",
+  "description": "Inngest app that detects flaky CI tests and automatically retries them",
+  "type": "module",
+  "scripts": {
+    "dev": "INNGEST_DEV=1 tsx src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=22.4.0"
+  },
+  "dependencies": {
+    "inngest": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
