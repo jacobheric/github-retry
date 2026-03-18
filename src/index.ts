@@ -5,7 +5,7 @@ import { retryFailedCI } from "./inngest/functions.js";
 async function main() {
   console.log("Connecting to Inngest...");
 
-  await connect({
+  const connection = await connect({
     apps: [
       {
         client: inngest,
@@ -13,6 +13,10 @@ async function main() {
       },
     ],
   });
+
+  console.log(`Connected to Inngest (${connection.connectionId})`);
+
+  await connection.closed;
 }
 
 main().catch(console.error);

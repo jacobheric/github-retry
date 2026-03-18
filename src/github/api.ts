@@ -6,6 +6,7 @@ const execAsync = promisify(exec);
 export interface Job {
   name: string;
   conclusion: "success" | "failure" | "cancelled" | "skipped" | null;
+  url: string;
 }
 
 export async function getRunJobs(repo: string, runId: number): Promise<Job[]> {
@@ -17,9 +18,15 @@ export async function getRunJobs(repo: string, runId: number): Promise<Job[]> {
 
 export async function rerunFailedJobs(
   repo: string,
-  runId: number
-): Promise<void> {
+  runId: number,
+  jobs: Job[]
+): Promise<{ rerunJobUrls: string[] }> {
   await execAsync(`gh run rerun ${runId} --repo ${repo} --failed`);
+
+  const failedJobs = jobs.filter((j) => j.conclusion === "failure");
+  return {
+    rerunJobUrls: failedJobs.map((j) => j.url),
+  };
 }
 
 export interface FlakyAnalysis {

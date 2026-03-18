@@ -9,7 +9,10 @@ export const retryFailedCI = inngest.createFunction(
   async ({ event, step }) => {
     const { run_id, repo, run_attempt, workflow_name, html_url } = event.data;
 
+    console.log(`[retry-failed-ci] ${repo} run ${run_id} (attempt ${run_attempt})`);
+
     if (run_attempt >= MAX_RETRY_ATTEMPTS) {
+      console.log(`[retry-failed-ci] Skipping: max retries reached`);
       return {
         action: "skipped",
         reason: "Max retries reached",
@@ -22,7 +25,11 @@ export const retryFailedCI = inngest.createFunction(
     const flakyAnalysis = detectFlakyTests(jobs);
 
     // Rerun failed jobs
-    await step.run("rerun-failed", () => rerunFailedJobs(repo, run_id));
+    const { rerunJobUrls } = await step.run("rerun-failed", () =>
+      rerunFailedJobs(repo, run_id, jobs)
+    );
+
+    console.log(`[retry-failed-ci] Rerun triggered (flaky: ${flakyAnalysis.isFlaky})`);
 
     return {
       action: "retried",
@@ -33,6 +40,7 @@ export const retryFailedCI = inngest.createFunction(
       isFlaky: flakyAnalysis.isFlaky,
       analysis: flakyAnalysis.analysis,
       url: html_url,
+      rerunJobUrls,
     };
   }
 );
