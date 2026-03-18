@@ -1,22 +1,28 @@
-import { connect } from "inngest/connect";
-import { inngest } from "./inngest/client.js";
-import { retryFailedCI } from "./inngest/functions.js";
+import { config } from "./config.ts";
+import { serve } from "inngest/edge";
+import { inngest } from "./inngest/client.ts";
+import { retryFailedCI } from "./inngest/functions.ts";
 
-async function main() {
-  console.log("Connecting to Inngest...");
+const INNGEST_SERVE_PATH = "/api/inngest";
+const PORT = Number(Deno.env.get("PORT") ?? "8000");
 
-  const connection = await connect({
-    apps: [
-      {
-        client: inngest,
-        functions: [retryFailedCI],
-      },
-    ],
-  });
+const inngestHandler = serve({
+  client: inngest,
+  functions: [retryFailedCI],
+  signingKey: config.inngestSigningKey,
+});
 
-  console.log(`Connected to Inngest (${connection.connectionId})`);
+export const handler = (request: Request) => {
+  const { pathname } = new URL(request.url);
 
-  await connection.closed;
+  if (pathname === INNGEST_SERVE_PATH) {
+    return inngestHandler(request);
+  }
+
+  return new Response("Not Found", { status: 404 });
+};
+
+if (import.meta.main) {
+  console.log(`Serving Inngest on http://localhost:${PORT}${INNGEST_SERVE_PATH}`);
+  Deno.serve({ port: PORT }, handler);
 }
-
-main().catch(console.error);

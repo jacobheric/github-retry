@@ -1,4 +1,5 @@
-import { Inngest, EventSchemas } from "inngest";
+import { config } from "../config.ts";
+import { EventSchemas, Inngest } from "inngest";
 
 type Events = {
   "github/workflow_run.failed": {
@@ -6,7 +7,6 @@ type Events = {
       run_id: number;
       repo: string;
       workflow_name: string;
-      branch: string;
       commit_sha: string;
       html_url: string;
       run_attempt: number;
@@ -15,6 +15,8 @@ type Events = {
 };
 
 export const inngest = new Inngest({
-  id: "github-retry",
+  id: "github-retry-ci",
+  eventKey: config.inngestEventKey,
+  isDev: config.inngestDev,
   schemas: new EventSchemas().fromRecord<Events>(),
 });

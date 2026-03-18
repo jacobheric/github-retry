@@ -1,27 +1,27 @@
 # github-retry
 
-Inngest app that detects flaky CI tests and automatically retries failed GitHub Actions workflows.
+Inngest app that detects flaky CI tests and automatically retries failed GitHub
+Actions workflows.
 
 ## How it works
 
 1. GitHub sends a `workflow_run` webhook when a workflow completes
 2. Inngest transforms it into a `github/workflow_run.failed` event
-3. This app analyzes the failed jobs, detects flaky tests (mixed pass/fail in matrix jobs), and reruns failed jobs
+3. This app analyzes the failed jobs, detects flaky tests (mixed pass/fail in
+   matrix jobs), and reruns failed jobs
 4. Retries up to 3 attempts per workflow run
 
 ## Prerequisites
 
-- Node.js 22.4.0+ (for Inngest Connect WebSocket support)
-- [GitHub CLI](https://cli.github.com/) (`gh`) installed and authenticated
+- Deno 2.0+
 - An [Inngest](https://www.inngest.com/) account
+- A GitHub token with access to the target repository
 
 ## Setup
 
 ### 1. Install dependencies
 
-```bash
-pnpm install
-```
+No install step is required. Deno will resolve dependencies from `deno.json`.
 
 ### 2. Configure environment variables
 
@@ -31,13 +31,21 @@ cp env.example .env
 
 Edit `.env`:
 
-- `INNGEST_SIGNING_KEY` - Get from [Inngest Dashboard](https://app.inngest.com/) → Manage → Signing Key
+- `INNGEST_SIGNING_KEY` - Get from [Inngest Dashboard](https://app.inngest.com/)
+  → Manage → Signing Key
+- `INNGEST_EVENT_KEY` - optional, only needed if this app will send events to
+  Inngest Cloud
+- `INNGEST_DEV` - optional, set to `1` only when you intentionally want local
+  Inngest dev mode
 - `GH_USERNAME` - scope to PRs authored by this username
-- `GH_TOKEN` - GitHub personal access token with `actions:write` scope (only needed if `gh auth login` isn't configured)
+- `GITHUB_TOKEN` - GitHub token with `actions:write` and pull request read
+  access
 
 ### 3. Configure Inngest webhook
 
-Create a webhook transform in Inngest to convert GitHub's `workflow_run` payload to your event schema. See [Inngest Webhook documentation](https://www.inngest.com/docs/platform/webhooks).
+Create a webhook transform in Inngest to convert GitHub's `workflow_run` payload
+to your event schema. See
+[Inngest Webhook documentation](https://www.inngest.com/docs/platform/webhooks).
 
 **Transform example:**
 
@@ -66,7 +74,6 @@ function transform(evt, headers = {}) {
       run_id: run.id,
       repo: evt.repository.full_name,
       workflow_name: run.name,
-      branch: run.head_branch,
       commit_sha: run.head_sha,
       html_url: run.html_url,
       run_attempt: run.run_attempt,
@@ -88,12 +95,20 @@ function transform(evt, headers = {}) {
 ### 5. Run the app
 
 ```bash
-# Development (connects to Inngest dev server)
-pnpm dev
+# Development
+deno task dev
 
 # Production
-pnpm start
+deno task start
 ```
+
+The Inngest serve endpoint is available at `http://localhost:8000/api/inngest`.
+
+## Deno Deploy
+
+Use `src/index.ts` as the entrypoint. The deployed app exposes the Inngest
+handler at `/api/inngest`, so point Inngest at
+`https://<your-app>.deno.dev/api/inngest`.
 
 ## License
 
