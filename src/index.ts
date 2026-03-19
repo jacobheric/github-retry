@@ -23,6 +23,8 @@ export const handler = (request: Request) => {
 };
 
 if (import.meta.main) {
-  console.log(`Serving Inngest on http://localhost:${PORT}${INNGEST_SERVE_PATH}`);
+  console.log(
+    `Serving Inngest on http://localhost:${PORT}${INNGEST_SERVE_PATH}`,
+  );
   Deno.serve({ port: PORT }, handler);
 }

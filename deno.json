@@ -1,4 +1,5 @@
 {
+  "nodeModulesDir": "auto",
   "imports": {
     "inngest": "npm:inngest@3.52.6",
     "inngest/edge": "npm:inngest@3.52.6/edge"
@@ -6,6 +7,6 @@
   "tasks": {
     "dev": "deno run --watch --allow-env --allow-net --env-file=.env src/index.ts",
     "start": "deno run --allow-env --allow-net --env-file=.env src/index.ts",
-    "check": "deno check src/index.ts"
+    "ok": "deno fmt . && deno lint . && deno check \"src/**/*.ts\""
   }
 }
