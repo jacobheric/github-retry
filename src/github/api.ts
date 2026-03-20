@@ -110,7 +110,12 @@ export async function rerunFailedJobs(
 export interface FlakyAnalysis {
   isFlaky: boolean;
   analysis: string;
+  excluded: boolean;
 }
+
+//
+// Some workflows fail for legitimate reasons and should never auto-retry.
+const NEVER_FLAKY_WORKFLOWS = new Set(["UnitTest"]);
 
 export async function getPRAuthor(
   repo: string,
@@ -124,7 +129,18 @@ export async function getPRAuthor(
   return pulls[0]?.user?.login ?? null;
 }
 
-export function detectFlakyTests(jobs: Job[]): FlakyAnalysis {
+export function detectFlakyTests(
+  jobs: Job[],
+  workflowName?: string,
+): FlakyAnalysis {
+  if (workflowName && NEVER_FLAKY_WORKFLOWS.has(workflowName)) {
+    return {
+      isFlaky: false,
+      analysis: `Workflow "${workflowName}" excluded from flaky detection`,
+      excluded: true,
+    };
+  }
+
   // Group jobs by base name (strip matrix params like "(ubuntu, node-18)")
   const jobGroups = new Map<string, Job[]>();
 
@@ -145,10 +161,15 @@ export function detectFlakyTests(jobs: Job[]): FlakyAnalysis {
         return {
           isFlaky: true,
           analysis: `"${baseName}": ${passed} passed, ${failed} failed`,
+          excluded: false,
         };
       }
     }
   }
 
-  return { isFlaky: false, analysis: "No flaky pattern detected" };
+  return {
+    isFlaky: false,
+    analysis: "No flaky pattern detected",
+    excluded: false,
+  };
 }

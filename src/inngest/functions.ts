@@ -24,7 +24,7 @@ export const retryFailedCI = inngest.createFunction(
     } = event.data;
 
     console.log(
-      `[retry-failed-ci] ${repo} run ${run_id} (attempt ${run_attempt})`,
+      `[retry-failed-ci] ${repo} run ${run_id} (attempt ${run_attempt}, workflow: ${workflow_name})\n  ${html_url}`,
     );
 
     // Check if PR author matches configured username
@@ -43,6 +43,21 @@ export const retryFailedCI = inngest.createFunction(
       };
     }
 
+    // Fetch jobs before retry decisions so workflow exclusions can short-circuit retries.
+    const jobs = await step.run("fetch-jobs", () => getRunJobs(repo, run_id));
+    const flakyAnalysis = detectFlakyTests(jobs, workflow_name);
+
+    if (flakyAnalysis.excluded) {
+      console.log(
+        `[retry-failed-ci] Skipping retry for excluded workflow: ${workflow_name}`,
+      );
+      return {
+        action: "skipped",
+        reason: `Workflow "${workflow_name}" excluded from automatic retry`,
+        url: html_url,
+      };
+    }
+
     if (run_attempt >= MAX_RETRY_ATTEMPTS) {
       console.log(`[retry-failed-ci] Skipping: max retries reached`);
       return {
@@ -51,10 +66,6 @@ export const retryFailedCI = inngest.createFunction(
         url: html_url,
       };
     }
-
-    // Fetch and analyze jobs
-    const jobs = await step.run("fetch-jobs", () => getRunJobs(repo, run_id));
-    const flakyAnalysis = detectFlakyTests(jobs);
 
     // Rerun failed jobs
     const { rerunJobUrls } = await step.run(
