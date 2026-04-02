@@ -1,5 +1,5 @@
 import { config } from "../config.ts";
-import { inngest } from "./client.ts";
+import { githubWorkflowRunFailed, inngest } from "./client.ts";
 import {
   detectFlakyTests,
   getPRAuthor,
@@ -11,8 +11,7 @@ const MAX_RETRY_ATTEMPTS = 3;
 const GH_USERNAME = config.ghUsername;
 
 export const retryFailedCI = inngest.createFunction(
-  { id: "retry-failed-ci" },
-  { event: "github/workflow_run.failed" },
+  { id: "retry-failed-ci", triggers: [githubWorkflowRunFailed] },
   async ({ event, step }) => {
     const {
       run_id,

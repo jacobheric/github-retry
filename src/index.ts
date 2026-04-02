@@ -1,4 +1,3 @@
-import { config } from "./config.ts";
 import { serve } from "inngest/edge";
 import { inngest } from "./inngest/client.ts";
 import { retryFailedCI } from "./inngest/functions.ts";
@@ -9,7 +8,6 @@ const PORT = Number(Deno.env.get("PORT") ?? "8000");
 const inngestHandler = serve({
   client: inngest,
   functions: [retryFailedCI],
-  signingKey: config.inngestSigningKey,
 });
 
 export const handler = (request: Request) => {
