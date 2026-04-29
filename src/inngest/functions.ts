@@ -6,6 +6,7 @@ import {
   getRunJobs,
   rerunFailedJobs,
 } from "../github/api.ts";
+import { logger } from "../logger.ts";
 
 const MAX_RETRY_ATTEMPTS = 3;
 const GH_USERNAME = config.ghUsername;
@@ -22,34 +23,43 @@ export const retryFailedCI = inngest.createFunction(
       commit_sha,
     } = event.data;
 
-    console.log(
-      `[retry-failed-ci] ${repo} run ${run_id} (attempt ${run_attempt}, workflow: ${workflow_name})\n  ${html_url}`,
-    );
+    logger.debug("[retry-failed-ci] received failed workflow run", {
+      repo,
+      runId: run_id,
+      attempt: run_attempt,
+      workflow: workflow_name,
+      url: html_url,
+    });
 
-    // Check if PR author matches configured username
     const prAuthor = await step.run(
       "get-pr-author",
       () => getPRAuthor(repo, commit_sha),
     );
 
     if (prAuthor !== GH_USERNAME) {
-      console.log(
-        `[retry-failed-ci] Skipping: PR author "${prAuthor}" does not match "${GH_USERNAME}"`,
-      );
+      logger.debug("[retry-failed-ci] skipped non-owned PR", {
+        repo,
+        runId: run_id,
+        workflow: workflow_name,
+        prAuthor,
+      });
+
       return {
         action: "skipped",
         reason: `PR author "${prAuthor}" does not match configured user`,
       };
     }
 
-    // Fetch jobs before retry decisions so workflow exclusions can short-circuit retries.
     const jobs = await step.run("fetch-jobs", () => getRunJobs(repo, run_id));
     const flakyAnalysis = detectFlakyTests(jobs, workflow_name);
 
     if (flakyAnalysis.excluded) {
-      console.log(
-        `[retry-failed-ci] Skipping retry for excluded workflow: ${workflow_name}`,
-      );
+      logger.debug("[retry-failed-ci] skipped excluded workflow", {
+        repo,
+        runId: run_id,
+        workflow: workflow_name,
+      });
+
       return {
         action: "skipped",
         reason: `Workflow "${workflow_name}" excluded from automatic retry`,
@@ -58,7 +68,13 @@ export const retryFailedCI = inngest.createFunction(
     }
 
     if (run_attempt >= MAX_RETRY_ATTEMPTS) {
-      console.log(`[retry-failed-ci] Skipping: max retries reached`);
+      logger.debug("[retry-failed-ci] skipped max attempts", {
+        repo,
+        runId: run_id,
+        attempt: run_attempt,
+        workflow: workflow_name,
+      });
+
       return {
         action: "skipped",
         reason: "Max retries reached",
@@ -66,15 +82,21 @@ export const retryFailedCI = inngest.createFunction(
       };
     }
 
-    // Rerun failed jobs
     const { rerunJobUrls } = await step.run(
       "rerun-failed",
       () => rerunFailedJobs(repo, run_id, jobs),
     );
 
-    console.log(
-      `[retry-failed-ci] Rerun triggered (flaky: ${flakyAnalysis.isFlaky})`,
-    );
+    logger.info("[retry-failed-ci] retried failed jobs", {
+      repo,
+      runId: run_id,
+      workflow: workflow_name,
+      nextAttempt: run_attempt + 1,
+      flaky: flakyAnalysis.isFlaky,
+      analysis: flakyAnalysis.analysis,
+      url: html_url,
+      rerunJobUrls,
+    });
 
     return {
       action: "retried",

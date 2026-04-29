@@ -1,6 +1,7 @@
 import { serve } from "inngest/edge";
 import { inngest } from "./inngest/client.ts";
 import { retryFailedCI } from "./inngest/functions.ts";
+import { logger } from "./logger.ts";
 
 const INNGEST_SERVE_PATH = "/api/inngest";
 const PORT = Number(Deno.env.get("PORT") ?? "8000");
@@ -21,7 +22,7 @@ export const handler = (request: Request) => {
 };
 
 if (import.meta.main) {
-  console.log(
+  logger.debug(
     `Serving Inngest on http://localhost:${PORT}${INNGEST_SERVE_PATH}`,
   );
   Deno.serve({ port: PORT }, handler);

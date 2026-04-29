@@ -37,6 +37,8 @@ Edit `.env`:
   Inngest Cloud
 - `INNGEST_DEV` - optional, set to `1` only when you intentionally want local
   Inngest dev mode
+- `LOG_LEVEL` - optional, set to `debug` to include skipped runs and startup
+  logs
 - `GH_USERNAME` - scope to PRs authored by this username
 - `GITHUB_TOKEN` - GitHub token with `actions:write` and pull request read
   access
