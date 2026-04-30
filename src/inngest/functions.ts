@@ -8,20 +8,14 @@ import {
 } from "../github/api.ts";
 import { logger } from "../logger.ts";
 
-const MAX_RETRY_ATTEMPTS = 3;
+const MAX_RETRY_ATTEMPTS = 10;
 const GH_USERNAME = config.ghUsername;
 
 export const retryFailedCI = inngest.createFunction(
   { id: "retry-failed-ci", triggers: [githubWorkflowRunFailed] },
   async ({ event, step }) => {
-    const {
-      run_id,
-      repo,
-      run_attempt,
-      workflow_name,
-      html_url,
-      commit_sha,
-    } = event.data;
+    const { run_id, repo, run_attempt, workflow_name, html_url, commit_sha } =
+      event.data;
 
     logger.debug("[retry-failed-ci] received failed workflow run", {
       repo,
@@ -31,9 +25,8 @@ export const retryFailedCI = inngest.createFunction(
       url: html_url,
     });
 
-    const prAuthor = await step.run(
-      "get-pr-author",
-      () => getPRAuthor(repo, commit_sha),
+    const prAuthor = await step.run("get-pr-author", () =>
+      getPRAuthor(repo, commit_sha),
     );
 
     if (prAuthor !== GH_USERNAME) {
@@ -68,7 +61,7 @@ export const retryFailedCI = inngest.createFunction(
     }
 
     if (run_attempt >= MAX_RETRY_ATTEMPTS) {
-      logger.debug("[retry-failed-ci] skipped max attempts", {
+      logger.info("[retry-failed-ci] skipped max attempts", {
         repo,
         runId: run_id,
         attempt: run_attempt,
@@ -82,9 +75,8 @@ export const retryFailedCI = inngest.createFunction(
       };
     }
 
-    const { rerunJobUrls } = await step.run(
-      "rerun-failed",
-      () => rerunFailedJobs(repo, run_id, jobs),
+    const { rerunJobUrls } = await step.run("rerun-failed", () =>
+      rerunFailedJobs(repo, run_id, jobs),
     );
 
     logger.info("[retry-failed-ci] retried failed jobs", {

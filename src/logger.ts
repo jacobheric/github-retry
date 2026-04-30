@@ -3,7 +3,7 @@ import { config } from "./config.ts";
 type LogMetadata = Record<string, unknown>;
 
 const formatLog = (message: string, metadata?: LogMetadata) =>
-  metadata ? `${message} ${JSON.stringify(metadata)}` : message;
+  metadata ? `${message} ${JSON.stringify(metadata, null, 2)}` : message;
 
 const debugEnabled = config.logLevel === "debug";
 
