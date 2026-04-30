@@ -8,7 +8,7 @@ import {
 } from "../github/api.ts";
 import { logger } from "../logger.ts";
 
-const MAX_RETRY_ATTEMPTS = 10;
+const MAX_RETRY_ATTEMPTS = 4;
 const GH_USERNAME = config.ghUsername;
 
 export const retryFailedCI = inngest.createFunction(
