@@ -11,7 +11,7 @@ import { logger } from "../logger.ts";
 const MAX_RETRY_ATTEMPTS = 3;
 const GH_USERNAME = config.ghUsername;
 
-const RETRIES_DISABLED = true;
+const RETRIES_DISABLED = false;
 
 export const retryFailedCI = inngest.createFunction(
   { id: "retry-failed-ci", triggers: [githubWorkflowRunFailed] },
