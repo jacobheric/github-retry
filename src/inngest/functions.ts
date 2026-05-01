@@ -11,11 +11,21 @@ import { logger } from "../logger.ts";
 const MAX_RETRY_ATTEMPTS = 3;
 const GH_USERNAME = config.ghUsername;
 
+const RETRIES_DISABLED = true;
+
 export const retryFailedCI = inngest.createFunction(
   { id: "retry-failed-ci", triggers: [githubWorkflowRunFailed] },
   async ({ event, step }) => {
     const { run_id, repo, run_attempt, workflow_name, html_url, commit_sha } =
       event.data;
+
+    if (RETRIES_DISABLED) {
+      return {
+        action: "skipped",
+        reason: "Automatic retries temporarily disabled",
+        url: html_url,
+      };
+    }
 
     logger.debug("[retry-failed-ci] received failed workflow run", {
       repo,
